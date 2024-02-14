@@ -49,8 +49,8 @@
             .y1(yScale(100));
 
 
-    let colorScale1 = d3.scaleLinear().domain([0, 4.5, all_cols.length - 1]).range(["blue", "white", "red"]);
-    let colorScale2 = d3.scaleLinear().domain([0, 4.5, all_cols.length - 1]).range(["lightsteelblue", "white", "pink"]);
+    let colorScale2 = d3.scaleLinear().domain([0, 4, 5, all_cols.length - 1]).range(["darkgreen", "lightgreen", "#FFD500", "red"]);
+    let colorScale1 = d3.scaleLinear().domain([0, 4, 5, all_cols.length - 1]).range(["lightsteelblue", "white", "pink"]);
 
     onMount(async () => {
 
@@ -180,7 +180,7 @@
     <g>
         <path
             d = {area(subset)}
-            fill = {index === hovered ? colorScale1(index): colorScale2(index)}
+            fill = {index === hovered ? (index < 5 ? "#CCFFCC" : "pink") : colorScale2(index)}
             on:mouseover={(event) => { hovered = index; 
                 recorded_mouse_position = {
                             x: event.pageX,
@@ -201,23 +201,23 @@
     {#each subset as row, index}
     {#if index < subset.length - 1}
         {#each row as col, index1}
-            {#if index1 > 0 && index1 <= 5}
+            {#if index1 > 0 && index1 != 5}
                 <line
                     x1={xScale(row[0])}
                     x2={xScale(subset[index + 1][0])}
                     y1={yScale(col)}
                     y2={yScale(subset[index + 1][index1])}
-                    stroke="blue"
+                    stroke="white"
                     stroke-width="2"
                 />
             {/if}
-            {#if index1 > 5}
+            {#if index1 == 5}
                 <line
                     x1={xScale(row[0])}
                     x2={xScale(subset[index + 1][0])}
                     y1={yScale(col)}
                     y2={yScale(subset[index + 1][index1])}
-                    stroke="red"
+                    stroke="white"
                     stroke-width="2"
                 />
             {/if}
