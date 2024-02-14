@@ -5,7 +5,7 @@
     <svelte:component this={Graph}/></section>
 <style>
     .container {
-    max-width: 750px;
+    max-width: 800px;
     border: solid 1px black;
     margin: auto;
     }

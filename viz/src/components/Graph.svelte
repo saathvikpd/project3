@@ -2,8 +2,11 @@
     import * as d3 from 'd3';
     import { onMount } from 'svelte';
 
-    let chartWidth = 700;
-    let chartHeight = 500;
+    let chartWidth = 800;
+    let chartHeight = 800;
+
+    let year1 = 0;
+    let year2 = 0;
 
     const paddings = {
                 top: 50,
@@ -24,6 +27,31 @@
 
     let cumul = [];
 
+    let gx;
+    let gy;
+
+    let hovered = -1; 
+
+	let recorded_mouse_position = {
+		x: 0, y: 0
+	};
+
+    let areas = [];
+    
+    let area1 = d3.area()
+            .x(function(d) { return xScale(d[0]); })
+            .y0(chartHeight - paddings.bottom)
+            .y1(function(d) { return yScale(d[5]); });
+
+    let area2 = d3.area()
+            .x(function(d) { return xScale(d[0]); })
+            .y0(function(d) { return yScale(d[5]); })
+            .y1(yScale(100));
+
+
+    let colorScale1 = d3.scaleLinear().domain([0, 4.5, all_cols.length - 1]).range(["blue", "white", "red"]);
+    let colorScale2 = d3.scaleLinear().domain([0, 4.5, all_cols.length - 1]).range(["lightsteelblue", "white", "pink"]);
+
     onMount(async () => {
 
         const res = await fetch('owid-energy-data.csv'); 
@@ -41,8 +69,8 @@
 
         if (data.length > 0) {
             let country = "United States";
-            let year1 = 2000;
-            let year2 = 2023;
+            year1 = 2000;
+            year2 = 2023;
 
             let item;
             let sub_item;
@@ -52,7 +80,7 @@
             let running_sum = 0;
             for (let i = 0; i < data.length; ++i) {
                 item = data[i];
-                if (item["country"] == country && item["year"] >= year1 && item["year"] < year2) {
+                if (item["country"] === country && item["year"] >= year1 && item["year"] < year2) {
                     sub_item = [item["year"]];
                     running_sum = 0;
                     for (let j = 0; j < temp.length; ++j) {
@@ -64,8 +92,6 @@
                 }
             }
 
-            console.log(subset);
-
             
 
             
@@ -73,8 +99,38 @@
             xScale = d3.scaleLinear().domain([year1, year2]).range([paddings.left, chartWidth - paddings.right]);
             yScale = d3.scaleLinear().domain([100, 0]).range([paddings.top, chartHeight - paddings.bottom]);
 
+            area1 = d3.area()
+            .x(function(d) { return xScale(d[0]); })
+            .y0(chartHeight - paddings.bottom)
+            .y1(function(d) { return yScale(d[5]); });
 
+            area2 = d3.area()
+            .x(function(d) { return xScale(d[0]); })
+            .y0(function(d) { return yScale(d[5]); })
+            .y1(yScale(100));
+
+            let temp_area;
+            for (let i = 0; i < all_cols.length; ++i) {
+                if (i === 0) {
+                    temp_area = d3.area()
+                    .x(function(d) { return xScale(d[0]); })
+                    .y0(chartHeight - paddings.bottom)
+                    .y1(function(d) { return yScale(d[1]); });
+                }
+                else {
+                    temp_area = d3.area()
+                    .x(function(d) { return xScale(d[0]); })
+                    .y0(function(d) { return yScale(d[i]); })
+                    .y1(function(d) { return yScale(d[i + 1]); });
+                }
+                areas.push(temp_area);
+            }
+
+            d3.select(gy).call(d3.axisLeft(yScale).ticks(null))
+            d3.select(gx).call(d3.axisBottom(xScale).ticks(10, "f"))
         }
+    
+    
         
 
         
@@ -85,59 +141,90 @@
 
 </script>
 
+<h1>Where have we been getting our electricity from in the 21st century?</h1>
 <svg width={chartWidth} height={chartHeight}>
- <g>
-   <line
-     x1={paddings.left}
-     x2={chartWidth - paddings.right}
-     y1={chartHeight - paddings.bottom}
-     y2={chartHeight - paddings.bottom}
-     stroke="black"
-     stroke-width="2"
-   />
-   <line
-     x1={paddings.left}
-     x2={paddings.left}
-     y1={paddings.top}
-     y2={chartHeight - paddings.bottom}
-     stroke="black"
-     stroke-width="2"
-   />
+    
+    <g>
+        <path
+            d = {area1(subset)}
+            fill = {hovered === 1 ? "blue": "lightsteelblue"}
+            on:mouseover={(event) => { hovered = 1; 
+				recorded_mouse_position = {
+							x: event.pageX,
+							y: event.pageY
+						}
 
-   <g>
-   {#each subset as row, index}
-   {#if index < subset.length - 1}
+				}}
+            on:mouseout={(event) => { hovered = -1; }}
+        >
+    </g>
+
+    <g>
+        <path
+            d = {area2(subset)}
+            fill = {hovered === 0 ? "red": "pink"}
+            on:mouseover={(event) => { hovered = 0; 
+				recorded_mouse_position = {
+							x: event.pageX,
+							y: event.pageY
+						}
+
+				}}
+            on:mouseout={(event) => { hovered = -1; }}
+        >
+    </g>
+
+
+    
+    {#each areas as area, index}
+    <g>
+        <path
+            d = {area(subset)}
+            fill = {index === hovered ? colorScale1(index): colorScale2(index)}
+            on:mouseover={(event) => { hovered = index; 
+                recorded_mouse_position = {
+                            x: event.pageX,
+                            y: event.pageY
+                        }
+
+                }}
+            on:mouseout={(event) => { hovered = -1; }}
+        >
+    </g>
+    {/each}
+
+    <g bind:this={gy} transform="translate({paddings.left} , 0)" />
+    <g bind:this={gx} transform="translate(0, {chartHeight - paddings.bottom})" />
+
+
+    <g>
+    {#each subset as row, index}
+    {#if index < subset.length - 1}
         {#each row as col, index1}
-            {#if index1 > 0 && index1 <= 4}
+            {#if index1 > 0 && index1 <= 5}
                 <line
                     x1={xScale(row[0])}
                     x2={xScale(subset[index + 1][0])}
                     y1={yScale(col)}
                     y2={yScale(subset[index + 1][index1])}
-                    stroke="black"
-                    stroke-width="1"
+                    stroke="blue"
+                    stroke-width="2"
                 />
             {/if}
-            {#if index1 > 4}
+            {#if index1 > 5}
                 <line
                     x1={xScale(row[0])}
                     x2={xScale(subset[index + 1][0])}
                     y1={yScale(col)}
                     y2={yScale(subset[index + 1][index1])}
                     stroke="red"
-                    stroke-width="1"
+                    stroke-width="2"
                 />
             {/if}
         {/each}
-   {/if}
-   {/each}
-   </g>
-   
-
-
-
-   
-  </g>
+    {/if}
+    {/each}
+    </g>
 </svg>
 
 
@@ -149,7 +236,8 @@
     }
 
     h1 {
-        font-size: 50px;
+        height: 0em;
+        font-size: 25px;
         font-weight: 300;
         line-height: 0.5;
         text-align: center
