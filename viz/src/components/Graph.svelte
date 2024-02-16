@@ -3,20 +3,21 @@
     import { onMount } from 'svelte';
 
     let chartWidth = 800;
-    let chartHeight = 800;
+    let chartHeight = 700;
 
-    let year1 = 0;
-    let year2 = 0;
+    let year1 = 2000;
+    let year2 = 2023;
+    let country = "Japan";
 
     const paddings = {
-                top: 50,
+                top: 30,
                 left: 50,
                 right: 50,
                 bottom: 50,
             };
 
     let nr = ['coal_share_elec', 'nuclear_share_elec', 'gas_share_elec', 'oil_share_elec'];
-    let r = ['solar_share_elec', 'biofuel_share_elec', 'other_renewables_share_elec_exc_biofuel', 'wind_share_elec', 'hydro_share_elec'];
+    let r = ['other_renewables_share_elec_exc_biofuel', 'solar_share_elec', 'biofuel_share_elec', 'wind_share_elec', 'hydro_share_elec'];
     const all_cols = r.concat(nr);
 
     let data = [];
@@ -35,6 +36,10 @@
 	let recorded_mouse_position = {
 		x: 0, y: 0
 	};
+
+    
+    let all_countries = [];
+    
 
     let areas = [];
     
@@ -62,20 +67,30 @@
 
     });
 
+    let boxText = "";
+
+    let name = "";
+
     
     
     
     $: {
 
+        console.log(country);
+
         if (data.length > 0) {
-            let country = "United States";
-            year1 = 2000;
-            year2 = 2023;
+
+            all_countries = [...new Set(data.map(item => item.country))];
+            // country = "United States";
+            // year1 = 2000;
+            // year2 = 2023;
 
             let item;
             let sub_item;
 
             let temp = all_cols;
+            subset = [];
+            areas = [];
 
             let running_sum = 0;
             for (let i = 0; i < data.length; ++i) {
@@ -128,9 +143,10 @@
 
             d3.select(gy).call(d3.axisLeft(yScale).ticks(null))
             d3.select(gx).call(d3.axisBottom(xScale).ticks(10, "f"))
+
         }
-    
-    
+
+
         
 
         
@@ -141,13 +157,12 @@
 
 </script>
 
-<h1>Where have we been getting our electricity from in the 21st century?</h1>
+<h1>Where has the <b>world</b> been getting its electricity from in the 21st century?</h1>
 <svg width={chartWidth} height={chartHeight}>
-    
     <g>
         <path
             d = {area1(subset)}
-            fill = {hovered === 1 ? "blue": "lightsteelblue"}
+            fill = {hovered === 1 ? "green": "#CCFFCC"}
             on:mouseover={(event) => { hovered = 1; 
 				recorded_mouse_position = {
 							x: event.pageX,
@@ -174,7 +189,7 @@
         >
     </g>
 
-
+    
     
     {#each areas as area, index}
     <g>
@@ -193,8 +208,8 @@
     </g>
     {/each}
 
-    <g bind:this={gy} transform="translate({paddings.left} , 0)" />
-    <g bind:this={gx} transform="translate(0, {chartHeight - paddings.bottom})" />
+    <g bind:this={gy} transform="translate({paddings.left} , 0)" style = "font-size: 12px"/>
+    <g bind:this={gx} transform="translate(0, {chartHeight - paddings.bottom})" style = "font-size: 12px"/>
 
 
     <g>
@@ -225,7 +240,38 @@
     {/if}
     {/each}
     </g>
+
+    <g>
+        <text transform="translate(370, 690)" style = "font-size: 20px">Year</text>
+    </g>
+    <g>
+        <text transform="translate(14, 400)rotate(-90)" style = "font-size: 20px">Percent Contribution</text>
+    </g>
+    
 </svg>
+
+<div
+		class={hovered === -1 ? "tooltip-hidden": "tooltip-visible"}
+		style="left: {recorded_mouse_position.x + 40}px; top: {recorded_mouse_position.y + 10}px"
+	>
+        {#if hovered != -1}
+            {all_cols[hovered].split("_share_elec")[0].split("_").join(" ")}
+        {/if}
+		<!-- {#if hovered >= 1}
+            {all_cols[hovered].split("_share_elec")[0].split("_").join(" ") + " (" + String(Math.round(100 * (subset[Math.round(xScale.invert(recorded_mouse_position.x - 263)) - year1][hovered + 1] - subset[Math.round(xScale.invert(recorded_mouse_position.x - 263)) - year1][hovered])) / 100) + "%)"}
+		{/if}
+        {#if hovered == 0}
+            {all_cols[hovered].split("_share_elec")[0].split("_").join(" ") + " (" + String(Math.round(100 * (subset[Math.round(xScale.invert(recorded_mouse_position.x - 263)) - year1][hovered + 1])) / 100) + "%)"}
+		{/if} -->
+</div>
+<h4>Select country/region:</h4>
+<select bind:value={country} id="countries" name="Countries">
+    {#each all_countries as c, index}
+        <option value={c}>{c}</option>
+    {/each}
+</select>
+
+
 
 
 
@@ -236,11 +282,53 @@
     }
 
     h1 {
+        position: relative;
+        left: 180px;
+        bottom: 14px;
         height: 0em;
         font-size: 25px;
         font-weight: 300;
-        line-height: 0.5;
-        text-align: center
+        line-height: 1.2;
+        text-align: center;
     }
+
+    h4 {
+        font-size: 20px;
+        position: relative;
+        bottom: 700px;
+        left: 740px
+    }
+
+
+    select {
+        font-size: 20px;
+		font-family: "Times New Roman";
+        text-align: center;
+        position: relative;
+        bottom: 700px;
+        left: 740px;
+        width: 200px;
+        height: 35px;
+    }
+
+    .tooltip-hidden {
+		visibility: hidden;
+		font-family: "Nunito", sans-serif;
+		width: 200px;
+		position: absolute;
+	}
+
+	.tooltip-visible {
+		font: 20px sans-serif;
+		font-family: "Nunito", sans-serif;
+		visibility: visible;
+		background-color: black;
+		border-radius: 20px;
+		width: 200px;
+		color: white;
+		position: absolute;
+		padding: 10px;
+        text-align: center;
+	}
 
 </style>
