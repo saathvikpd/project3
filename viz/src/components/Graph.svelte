@@ -157,7 +157,7 @@
 
 </script>
 
-<h1>Where has the <b>world</b> been getting its electricity from in the 21st century?</h1>
+<h1>Where has <b>{country}</b> been getting its electricity from in the 21st century?</h1>
 <svg width={chartWidth} height={chartHeight}>
     <g>
         <path
@@ -280,11 +280,17 @@
 <style>
     main {
     }
+    
+    svg {
+        position:relative;
+        top: 20px;
+    }
 
     h1 {
+        width: 200%;
         position: relative;
-        left: 180px;
-        bottom: 14px;
+        left: 0px;
+        bottom: 0px;
         height: 0em;
         font-size: 25px;
         font-weight: 300;
